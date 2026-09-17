@@ -1,0 +1,103 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:alass_gui.Views"
+        mc:Ignorable="d" d:DesignWidth="1075" d:DesignHeight="551"
+        CanResize="False"
+        x:Class="alass_gui.Views.MainWindow"
+        x:DataType="views:MainWindow"
+        Icon="/Assets/icon.ico"
+        Title="alass_gui">
+    <Grid>
+
+        <TabControl Margin="0">
+            <TabItem Header="Sync">
+                <Grid Margin="5" RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+                        <TextBox Name="MainPath" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,10,10" />
+                        <Button Grid.Row="0" Grid.Column="2" Content="Browse Folder Dialog" Width="145"
+                                Click="browseFolderDialog_Click" Margin="0,0,0,10" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Video file:" VerticalAlignment="Center"
+                                   Margin="0,0,10,10" TextAlignment="Right" />
+                        <ComboBox Name="VideoFileList" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
+                                  Margin="0,0,10,10" SelectionChanged="videoFileList_SelectionChangeCommitted" />
+                        <Button Grid.Row="1" Grid.Column="2" Content="Scan Folder" Width="145" Click="scanFolder_Click"
+                                Margin="0,0,0,10" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Reference subtitle:" VerticalAlignment="Center"
+                                   Margin="0,0,10,10" TextAlignment="Right" />
+                        <ComboBox Name="ReferenceSubsList" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
+                                  Margin="0,0,10,10" SelectionChanged="referenceSubsList_SelectionChangeCommitted" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Subtitle to sync:" VerticalAlignment="Center"
+                                   Margin="0,0,10,10" TextAlignment="Right" />
+                        <ComboBox Name="SubsToSyncList" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch"
+                                  Margin="0,0,10,10" SelectionChanged="subsToSyncList_SelectionChangeCommitted" />
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="108,10,0,0" ColumnDefinitions="220,250,*">
+                        <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Padding="10">
+                            <StackPanel>
+                                <TextBlock Text="Options" FontWeight="Bold" Margin="0,0,0,10" />
+                                <CheckBox Name="NegativeTimestampCheck" Content="Allow negative timestamps"
+                                          Margin="0,0,0,5" />
+                                <CheckBox Name="DisableFpsGuessCheck" Content="Disable FPS guessing" Margin="0,0,0,5" />
+                                <CheckBox Name="NoSplitingCheck" Content="No spliting" Margin="0,0,0,5" />
+                                <CheckBox Name="SpeedOptimizationCheck" Content="Speed optimization" Margin="0,0,0,5" />
+                                <CheckBox Name="CloseCmdCheck" Content="Close terminal after syncing" Margin="0,0,0,5" />
+                                <CheckBox Name="SubsNameLikeVideoCheck" Content="Subtitle name like video file"
+                                          Margin="0,0,0,5" />
+                                <CheckBox Name="ReplaceSubsCheck" Content="Replace subtitles" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                            <TextBlock Text="Split penalty (default 7):" Margin="0,0,0,5" />
+                            <NumericUpDown Name="SplitPenalty" FormatString="0" Minimum="0" Maximum="1000" Value="7"
+                                           Width="132" HorizontalAlignment="Left" Margin="0,0,0,15" />
+                            <TextBlock Text="Smallest recognized time interval (ms):" Margin="0,0,0,5" />
+                            <NumericUpDown Name="Interval" FormatString="0" Minimum="1" Maximum="1000" Value="1"
+                                           Width="132" HorizontalAlignment="Left" Margin="0,0,0,30" />
+                            <Button Name="SyncButton" Content="Sync" Width="387" Height="46"
+                                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                    Click="syncButton_Click" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" Margin="150,0,0,0">
+                            <TextBlock Text="Add language code:" Margin="0,0,0,5" />
+                            <ComboBox Name="LangugeCode" Width="121" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="About">
+                <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Supported video file types: .mkv, .mp4, .avi, .mov, .ts, .m4v" />
+                    <TextBlock Text="Supported subtitles types: .srt, .ssa, .ass, .idx" />
+
+                    <TextBlock
+                        Text="Gui for Automatic Language-Agnostic Subtitle Synchronization&#x0a;https://github.com/kaegi/alass"
+                        Margin="0,15,0,0" />
+                    <Button Name="AlassGitHubOpen" Content="alass - github" Click="alassGitHubOpen_Click" />
+
+                    <TextBlock Text="Made by: Szymon Kaczmarek" Margin="0,15,0,0" />
+                    <Button Name="MyGithub" Content="github" Click="myGithub_Click_1" />
+                </StackPanel>
+            </TabItem>
+
+        </TabControl>
+        
+        <Border Name="DownloadOverlay" IsVisible="False" Background="#A0000000">
+            <Border Background="{DynamicResource SystemRegionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="25" CornerRadius="8" BoxShadow="0 4 8 0 #40000000">
+                <StackPanel Spacing="15" Width="350">
+                    <TextBlock Name="DownloadStatusText" Text="Downloading ALASS..." HorizontalAlignment="Center" FontWeight="Bold" FontSize="16"/>
+                    <ProgressBar Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0" Height="25" ShowProgressText="True"/>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</Window>
