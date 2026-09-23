@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Net.Http;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 
 namespace alass_gui.Views
 {
@@ -73,7 +74,7 @@ namespace alass_gui.Views
         {
             InitializeComponent();
             DataContext = this;
-            LangugeCode.ItemsSource = Languages;
+            LangugeCode.ItemsSource = Languages.OrderBy(lang => lang).ToList();
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
         }
@@ -87,7 +88,6 @@ namespace alass_gui.Views
                 DisableFpsGuessCheck.IsChecked = _currentSettings.FpsGuessingSetting;
                 NoSplitingCheck.IsChecked = _currentSettings.NoSplitingSetting;
                 SpeedOptimizationCheck.IsChecked = _currentSettings.SpeedOptSetting;
-                CloseCmdCheck.IsChecked = _currentSettings.CloseCmdSetting;
                 SplitPenalty.Value = _currentSettings.SplitPenalitSetting;
                 Interval.Value = _currentSettings.IntervalSetting;
                 SubsNameLikeVideoCheck.IsChecked = _currentSettings.SubsLikeVideoSetting;
@@ -338,59 +338,133 @@ namespace alass_gui.Views
             }
         }
 
-        private void syncButton_Click(object? sender, RoutedEventArgs e)
+        private async void syncButton_Click(object? sender, RoutedEventArgs e)
         {
-            var isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-            var commandToExecute = isLinux
-                ? $"\"{_alassPath}\""
-                : $"\"{Path.Combine(_alassPath, "alass.bat")}\"";
-
-            var splitPenaltyValue = ((int)(SplitPenalty.Value ?? 7)).ToString();
-            var intevalValue = ((int)(Interval.Value ?? 1)).ToString();
-
-            if ((ReferenceSubsList.SelectedIndex == -1 && VideoFileList.SelectedIndex != -1 &&
-                 SubsToSyncList.SelectedIndex != -1) ||
-                (ReferenceSubsList.SelectedIndex != -1 && SubsToSyncList.SelectedIndex != -1))
+            try
             {
-                SubOutName();
+                if (!((ReferenceSubsList.SelectedIndex == -1 && VideoFileList.SelectedIndex != -1 &&
+                       SubsToSyncList.SelectedIndex != -1) ||
+                      (ReferenceSubsList.SelectedIndex != -1 && SubsToSyncList.SelectedIndex != -1)))
+                {
+                    await MessageBoxManager.GetMessageBoxStandard(
+                        "Error",
+                        "Select at least video and subtitle to sync",
+                        ButtonEnum.Ok,
+                        MsBox.Avalonia.Enums.Icon.Error).ShowWindowDialogAsync(this);
+                    return;
+                }
 
+                var isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+                var executableFile = isLinux ? _alassPath : Path.Combine(_alassPath, "alass.bat");
+
+                var splitPenaltyValue = ((int)(SplitPenalty.Value ?? 7)).ToString();
+                var intervalValue = ((int)(Interval.Value ?? 1)).ToString();
+
+                SubOutName();
                 var targetInput = ReferenceSubsList.SelectedIndex == -1 ? _selectedVideoFile : _selectedReferenceSubs;
 
-                commandToExecute +=
-                    $" {targetInput} {_selectedSubsToSync} {_subOutput} --split-penalty {splitPenaltyValue} --interval {intevalValue}";
+                ConsoleOutput.Text = "Starting ALASS...\n";
 
-                if (NegativeTimestampCheck.IsChecked == true) commandToExecute += " --allow-negative-timestamps";
-                if (DisableFpsGuessCheck.IsChecked == true) commandToExecute += " --disable-fps-guessing";
-                if (NoSplitingCheck.IsChecked == true) commandToExecute += " --no-split";
-                if (SpeedOptimizationCheck.IsChecked == true) commandToExecute += " --speed-optimization";
+                var workingDir = MainPath.Text;
+                if (string.IsNullOrWhiteSpace(workingDir) || !Directory.Exists(workingDir))
+                {
+                    await MessageBoxManager.GetMessageBoxStandard(
+                        "Error",
+                        "The selected directory does not exist or is invalid.",
+                        ButtonEnum.Ok,
+                        MsBox.Avalonia.Enums.Icon.Error).ShowWindowDialogAsync(this);
+                    return;
+                }
 
-                if (isLinux)
+                var psi = new ProcessStartInfo
                 {
-                    var bashCommand = $"-c \"{commandToExecute.Replace("\"", "\\\"")}\"";
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "bash",
-                        Arguments = bashCommand,
-                        UseShellExecute = false
-                    });
-                }
-                else
+                    FileName = executableFile,
+                    WorkingDirectory = workingDir,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                psi.ArgumentList.Add(targetInput.Trim('"'));
+                psi.ArgumentList.Add(_selectedSubsToSync.Trim('"'));
+                psi.ArgumentList.Add(_subOutput.Trim('"'));
+
+                psi.ArgumentList.Add("--split-penalty");
+                psi.ArgumentList.Add(splitPenaltyValue);
+                psi.ArgumentList.Add("--interval");
+                psi.ArgumentList.Add(intervalValue);
+
+                if (NegativeTimestampCheck.IsChecked == true) psi.ArgumentList.Add("--allow-negative-timestamps");
+                if (DisableFpsGuessCheck.IsChecked == true) psi.ArgumentList.Add("--disable-fps-guessing");
+                if (NoSplitingCheck.IsChecked == true) psi.ArgumentList.Add("--no-split");
+                if (SpeedOptimizationCheck.IsChecked == true) psi.ArgumentList.Add("--speed-optimization");
+
+                var process = new Process
                 {
-                    var cmdCommand = CloseCmdCheck.IsChecked == true
-                        ? $"/C \"{commandToExecute}\""
-                        : $"/K \"{commandToExecute}\"";
-                    Process.Start(new ProcessStartInfo
+                    StartInfo = psi,
+                    EnableRaisingEvents = true
+                };
+
+                var lastLineWasProgress = false;
+
+                process.OutputDataReceived += (_, ev) =>
+                {
+                    if (!string.IsNullOrEmpty(ev.Data))
                     {
-                        FileName = "CMD.exe",
-                        Arguments = cmdCommand,
-                        UseShellExecute = true
-                    });
-                }
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            var isProgress = ev.Data.Contains($"[") && ev.Data.Contains($"]") && ev.Data.Contains($"%");
+
+                            if (isProgress && lastLineWasProgress)
+                            {
+                                var lastNewline = ConsoleOutput.Text.LastIndexOf('\n',
+                                    Math.Max(0, ConsoleOutput.Text.Length - 2));
+                                if (lastNewline >= 0)
+                                {
+                                    ConsoleOutput.Text = string.Concat(ConsoleOutput.Text.AsSpan(0, lastNewline + 1), ev.Data, "\n");
+                                }
+                                else
+                                {
+                                    ConsoleOutput.Text = ev.Data + "\n";
+                                }
+                            }
+                            else
+                            {
+                                ConsoleOutput.Text += ev.Data + "\n";
+                            }
+
+                            lastLineWasProgress = isProgress;
+                            ConsoleOutput.CaretIndex = ConsoleOutput.Text.Length;
+                        });
+                    }
+                };
+
+                process.ErrorDataReceived += (_, ev) =>
+                {
+                    if (!string.IsNullOrEmpty(ev.Data))
+                    {
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            ConsoleOutput.Text += "[ERROR] " + ev.Data + "\n";
+                            ConsoleOutput.CaretIndex = ConsoleOutput.Text.Length;
+                        });
+                    }
+                };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBoxManager.GetMessageBoxStandard("Error", "Select at least video and subtitle to sync",
-                    ButtonEnum.Ok, MsBox.Avalonia.Enums.Icon.Error).ShowWindowDialogAsync(this);
+                ConsoleOutput.Text += $"\n[CRITICAL ERROR] {ex.Message}\n";
+
+                await MessageBoxManager.GetMessageBoxStandard(
+                    "Sync Error",
+                    $"An error occurred while running ALASS: {ex.Message}",
+                    ButtonEnum.Ok,
+                    MsBox.Avalonia.Enums.Icon.Error).ShowWindowDialogAsync(this);
             }
         }
 
@@ -400,7 +474,6 @@ namespace alass_gui.Views
             _currentSettings.FpsGuessingSetting = DisableFpsGuessCheck.IsChecked ?? false;
             _currentSettings.NoSplitingSetting = NoSplitingCheck.IsChecked ?? false;
             _currentSettings.SpeedOptSetting = SpeedOptimizationCheck.IsChecked ?? false;
-            _currentSettings.CloseCmdSetting = CloseCmdCheck.IsChecked ?? false;
             _currentSettings.SplitPenalitSetting = SplitPenalty.Value ?? 7;
             _currentSettings.IntervalSetting = Interval.Value ?? 1;
             _currentSettings.Px = this.Position.X;
@@ -456,7 +529,6 @@ namespace alass_gui.Views
         public bool FpsGuessingSetting { get; set; }
         public bool NoSplitingSetting { get; set; }
         public bool SpeedOptSetting { get; set; }
-        public bool CloseCmdSetting { get; set; }
         public decimal SplitPenalitSetting { get; set; } = 7;
         public decimal IntervalSetting { get; set; } = 1;
         public int Px { get; set; }

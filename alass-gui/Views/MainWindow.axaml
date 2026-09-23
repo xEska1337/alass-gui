@@ -3,15 +3,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:alass_gui.Views"
-        mc:Ignorable="d" d:DesignWidth="1075" d:DesignHeight="551"
-        CanResize="False"
+        mc:Ignorable="d" d:DesignWidth="1235" d:DesignHeight="704"
+        CanResize="True"
         x:Class="alass_gui.Views.MainWindow"
         x:DataType="views:MainWindow"
         Icon="/Assets/icon.ico"
         Title="alass_gui">
-    <Grid>
+    <Grid RowDefinitions="Auto, *">
 
-        <TabControl Margin="0">
+        <TabControl Grid.Row="0" Margin="0">
             <TabItem Header="Sync">
                 <Grid Margin="5" RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
@@ -47,7 +47,6 @@
                                 <CheckBox Name="DisableFpsGuessCheck" Content="Disable FPS guessing" Margin="0,0,0,5" />
                                 <CheckBox Name="NoSplitingCheck" Content="No spliting" Margin="0,0,0,5" />
                                 <CheckBox Name="SpeedOptimizationCheck" Content="Speed optimization" Margin="0,0,0,5" />
-                                <CheckBox Name="CloseCmdCheck" Content="Close terminal after syncing" Margin="0,0,0,5" />
                                 <CheckBox Name="SubsNameLikeVideoCheck" Content="Subtitle name like video file"
                                           Margin="0,0,0,5" />
                                 <CheckBox Name="ReplaceSubsCheck" Content="Replace subtitles" />
@@ -91,7 +90,16 @@
 
         </TabControl>
         
-        <Border Name="DownloadOverlay" IsVisible="False" Background="#A0000000">
+        <TextBox Grid.Row="1" Name="ConsoleOutput" 
+                 IsReadOnly="True" 
+                 Focusable="False" 
+                 TextWrapping="Wrap" 
+                 Background="#1E1E1E" 
+                 Foreground="#CCCCCC" 
+                 FontFamily="Consolas, Monospace" 
+                 Margin="10" />
+        
+        <Border Grid.Row="0" Grid.RowSpan="2" Name="DownloadOverlay" IsVisible="False" Background="#A0000000">
             <Border Background="{DynamicResource SystemRegionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="25" CornerRadius="8" BoxShadow="0 4 8 0 #40000000">
                 <StackPanel Spacing="15" Width="350">
                     <TextBlock Name="DownloadStatusText" Text="Downloading ALASS..." HorizontalAlignment="Center" FontWeight="Bold" FontSize="16"/>
