@@ -9,11 +9,11 @@
         x:DataType="views:MainWindow"
         Icon="/Assets/icon.ico"
         Title="alass_gui">
-    <Grid RowDefinitions="Auto, *">
+    <Grid>
 
-        <TabControl Grid.Row="0" Margin="0">
+        <TabControl Margin="0">
             <TabItem Header="Sync">
-                <Grid Margin="5" RowDefinitions="Auto,*">
+                <Grid Margin="5" RowDefinitions="Auto,Auto,*">
                     <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                         <TextBox Name="MainPath" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,10,10" />
@@ -38,7 +38,7 @@
                                   Margin="0,0,10,10" SelectionChanged="subsToSyncList_SelectionChangeCommitted" />
                     </Grid>
 
-                    <Grid Grid.Row="1" Margin="108,10,0,0" ColumnDefinitions="220,250,*">
+                    <Grid Grid.Row="1" Margin="108,10,0,10" ColumnDefinitions="220,250,*">
                         <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Padding="10">
                             <StackPanel>
                                 <TextBlock Text="Options" FontWeight="Bold" Margin="0,0,0,10" />
@@ -70,6 +70,15 @@
                             <ComboBox Name="LangugeCode" Width="121" />
                         </StackPanel>
                     </Grid>
+
+                    <TextBox Grid.Row="2" Name="ConsoleOutput" 
+                             IsReadOnly="True" 
+                             Focusable="False" 
+                             TextWrapping="Wrap" 
+                             Background="#1E1E1E" 
+                             Foreground="#CCCCCC" 
+                             FontFamily="Consolas, Monospace" 
+                             Margin="0,10,0,0" />
                 </Grid>
             </TabItem>
 
@@ -89,17 +98,8 @@
             </TabItem>
 
         </TabControl>
-        
-        <TextBox Grid.Row="1" Name="ConsoleOutput" 
-                 IsReadOnly="True" 
-                 Focusable="False" 
-                 TextWrapping="Wrap" 
-                 Background="#1E1E1E" 
-                 Foreground="#CCCCCC" 
-                 FontFamily="Consolas, Monospace" 
-                 Margin="10" />
-        
-        <Border Grid.Row="0" Grid.RowSpan="2" Name="DownloadOverlay" IsVisible="False" Background="#A0000000">
+
+        <Border Name="DownloadOverlay" IsVisible="False" Background="#A0000000">
             <Border Background="{DynamicResource SystemRegionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="25" CornerRadius="8" BoxShadow="0 4 8 0 #40000000">
                 <StackPanel Spacing="15" Width="350">
                     <TextBlock Name="DownloadStatusText" Text="Downloading ALASS..." HorizontalAlignment="Center" FontWeight="Bold" FontSize="16"/>
